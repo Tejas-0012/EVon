@@ -8,6 +8,7 @@ const {
   getStationAdmins,
   createStationAdmin,
   deleteStationAdmin,
+  getAllUsers,
   seedAdminsEndpoint,
 } = require('../controllers/auth.controller');
 const { protect } = require('../middleware/auth.middleware');
@@ -17,6 +18,7 @@ router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
+router.get('/users', protect, restrictTo('super_admin'), getAllUsers);
 router.get('/station-admins', protect, restrictTo('super_admin'), getStationAdmins);
 router.post('/station-admins', protect, restrictTo('super_admin'), createStationAdmin);
 router.delete('/station-admins/:id', protect, restrictTo('super_admin'), deleteStationAdmin);

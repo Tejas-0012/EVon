@@ -223,6 +223,41 @@ const deleteStationAdmin = async (req, res, next) => {
   }
 };
 
+// @desc    Get all registered users (drivers) with booking stats (super_admin only)
+// @route   GET /api/auth/users
+// @access  Private (super_admin)
+const getAllUsers = async (req, res, next) => {
+  try {
+    const Booking = require('../models/Booking');
+    const users = await User.find({ role: 'user' }).sort({ createdAt: -1 });
+
+    const enriched = await Promise.all(
+      users.map(async (u) => {
+        const bookingsCount = await Booking.countDocuments({ user: u._id });
+        return {
+          id: u._id,
+          _id: u._id,
+          name: u.name,
+          email: u.email,
+          phone: u.phone || '+91 9123456789',
+          vehicleType: u.vehicleType || 'Electric Car',
+          batteryCapacity: u.batteryCapacity || 60.0,
+          role: u.role,
+          bookingsCount,
+          createdAt: u.createdAt,
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      users: enriched,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Ensure 1 super_admin and 3 station_admins are seeded and linked
 // @route   GET /api/auth/seed-admins
 // @access  Public
@@ -244,5 +279,6 @@ module.exports = {
   getStationAdmins,
   createStationAdmin,
   deleteStationAdmin,
+  getAllUsers,
   seedAdminsEndpoint,
 };

@@ -68,11 +68,11 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`====================================================`);
     console.log(`  ⚡ EVon Node.js API Server running on port ${PORT}`);
     console.log(`  🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`  🔌 Health Check: http://10.182.22.187:${PORT}/health`);
+    console.log(`  🔌 Health Check: /health`);
     console.log(`====================================================`);
   });
 }
