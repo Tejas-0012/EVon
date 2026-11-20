@@ -1,0 +1,42 @@
+name: evon
+description: "EVon Smart EV Charging Management System - Flutter Cross-Platform Mobile & Web"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Networking & HTTP
+  dio: ^5.4.3+1
+  http: ^1.2.1
+
+  # State Management
+  provider: ^6.1.2
+
+  # Maps & Location
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.1
+
+  # Charts & Visualizations
+  fl_chart: ^0.68.0
+
+  # Local Storage & Utilities
+  shared_preferences: ^2.2.3
+  intl: ^0.20.2
+  cupertino_icons: ^1.0.8
+  geolocator: ^14.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
