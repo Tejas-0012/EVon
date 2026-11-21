@@ -8,6 +8,7 @@ const {
   getAllBookings,
   getBookingById,
   updateBookingStatus,
+  handleNoShowCancellation,
 } = require('../controllers/booking.controller');
 const { protect } = require('../middleware/auth.middleware');
 const { restrictTo } = require('../middleware/role.middleware');
@@ -19,5 +20,6 @@ router.get('/', protect, restrictTo('super_admin', 'station_admin'), getAllBooki
 router.get('/:id', protect, getBookingById);
 router.put('/:id/cancel', protect, cancelBooking);
 router.put('/:id/status', protect, restrictTo('super_admin', 'station_admin'), updateBookingStatus);
+router.put('/:id/no-show', protect, restrictTo('super_admin', 'station_admin'), handleNoShowCancellation);
 
 module.exports = router;

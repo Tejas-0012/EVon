@@ -1,5 +1,5 @@
 const Station = require('../models/Station');
-const { predictDemand, forecastLoad } = require('../services/mlClient.service');
+const { predictDemand, forecastLoad, predictBestSlotAndBay } = require('../services/mlClient.service');
 
 // @desc    Get ML service status
 // @route   GET /api/ml/status
@@ -72,8 +72,47 @@ const getLoadForecasts = async (req, res, next) => {
   }
 };
 
+// @desc    Predict Best Slot & Best Bay (Fast Time & Low Traffic Optimization)
+// @route   GET /api/ml/predict/best-slot-bay
+// @access  Public
+const getBestSlotBayPrediction = async (req, res, next) => {
+  try {
+    const { stationId, date, hour } = req.query;
+
+    let station = null;
+    if (stationId) {
+      station = await Station.findById(stationId);
+    } else {
+      station = await Station.findOne({ status: 'Active' });
+    }
+
+    const prediction = await predictBestSlotAndBay({
+      station,
+      date,
+      hour: hour !== undefined ? parseInt(hour) : new Date().getHours(),
+    });
+
+    res.json({
+      success: true,
+      station: station
+        ? {
+            id: station._id,
+            stationName: station.stationName,
+            chargerPower: station.chargerPower,
+            chargerType: station.chargerType,
+            totalSlots: station.totalSlots,
+          }
+        : null,
+      ...prediction,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getMlStatus,
   getStationDemand,
   getLoadForecasts,
+  getBestSlotBayPrediction,
 };

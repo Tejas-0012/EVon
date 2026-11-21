@@ -6,7 +6,7 @@ const { haversineKm } = require('../services/recommendation.service');
 const IOT_TIMEOUT_MS = 5 * 60 * 1000;
 
 /**
- * Augment station with live wait time and dynamic IoT active/offline health
+ * Augment station with live wait time, dynamic IoT active/offline health, and full bay list
  */
 const augmentStation = (st) => {
   const obj = st.toObject ? st.toObject() : { ...st };
@@ -21,6 +21,24 @@ const augmentStation = (st) => {
       obj.availableSlots = 0;
     }
   }
+
+  // Ensure dynamic bays array matches totalSlots (e.g. 4 slots -> 4 bays in 2x2 grid)
+  const totalSlots = obj.totalSlots || 4;
+  const existingBays = obj.bays || [];
+  const fullBays = [];
+  for (let i = 1; i <= totalSlots; i++) {
+    const match = existingBays.find((b) => b.bayNumber === i);
+    if (match) {
+      fullBays.push(match);
+    } else {
+      fullBays.push({
+        bayNumber: i,
+        status: i <= (obj.occupiedSlots || 0) ? 'Charging' : 'Available',
+        lastUpdated: new Date(),
+      });
+    }
+  }
+  obj.bays = fullBays;
 
   return obj;
 };

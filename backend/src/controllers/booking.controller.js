@@ -266,11 +266,12 @@ const getAllBookings = async (req, res, next) => {
       filter.bookingStatus = req.query.status;
     }
 
+    // Sort by First-Come First-Served priority (earliest slot / earliest created)
     const bookings = await Booking.find(filter)
       .populate('user', 'name email phone vehicleType batteryCapacity')
-      .populate('station', 'stationName city chargerType address pricePerKwh totalSlots availableSlots occupiedSlots')
+      .populate('station', 'stationName city chargerType address pricePerKwh totalSlots availableSlots occupiedSlots bays')
       .populate('slot')
-      .sort({ createdAt: -1 });
+      .sort({ slotDate: 1, slotTime: 1, createdAt: 1 });
 
     res.json({
       success: true,
@@ -306,26 +307,53 @@ const updateBookingStatus = async (req, res, next) => {
     }
 
     const oldStatus = booking.bookingStatus;
-    booking.bookingStatus = status;
-    if (status === 'Cancelled' && booking.paymentStatus === 'Paid') {
+    const finalStatus = status === 'Accepted' ? 'Confirmed' : status;
+    booking.bookingStatus = finalStatus;
+
+    if (finalStatus === 'Cancelled' && booking.paymentStatus === 'Paid') {
       booking.paymentStatus = 'Refunded';
     }
 
-    if (status === 'Completed' || status === 'Cancelled') {
+    // If accepting / confirming: auto-reflect in Slot Manager and reserve bay
+    if (['Confirmed', 'Accepted'].includes(status)) {
+      if (booking.slot) {
+        await Slot.findByIdAndUpdate(booking.slot, { status: 'Booked' });
+      } else if (booking.station && booking.slotDate && booking.slotTime) {
+        await Slot.findOneAndUpdate(
+          { station: booking.station, slotDate: booking.slotDate, slotTime: booking.slotTime },
+          { status: 'Booked' },
+          { upsert: true }
+        );
+      }
+
+      if (booking.station && !['Confirmed', 'Paid'].includes(oldStatus)) {
+        const station = await Station.findById(booking.station);
+        if (station) {
+          station.availableSlots = Math.max(0, (station.availableSlots || station.totalSlots) - 1);
+          station.occupiedSlots = Math.min(station.totalSlots || 4, (station.occupiedSlots || 0) + 1);
+          await station.save();
+        }
+      }
+    }
+
+    if (finalStatus === 'Completed' || finalStatus === 'Cancelled') {
       // Release slot back to Available
       if (booking.slot) {
         await Slot.findByIdAndUpdate(booking.slot, { status: 'Available' });
+      } else if (booking.station && booking.slotDate && booking.slotTime) {
+        await Slot.findOneAndUpdate(
+          { station: booking.station, slotDate: booking.slotDate, slotTime: booking.slotTime },
+          { status: 'Available' }
+        );
       }
+
       // Release physical occupied slot
       if (booking.station && ['Confirmed', 'Paid'].includes(oldStatus)) {
         const station = await Station.findById(booking.station);
         if (station) {
-          await Station.findByIdAndUpdate(booking.station, {
-            $inc: {
-              availableSlots: station.availableSlots < (station.totalSlots || 99) ? 1 : 0,
-              occupiedSlots: station.occupiedSlots > 0 ? -1 : 0,
-            },
-          });
+          station.availableSlots = Math.min(station.totalSlots || 4, (station.availableSlots || 0) + 1);
+          station.occupiedSlots = Math.max(0, (station.occupiedSlots || 1) - 1);
+          await station.save();
         }
       }
     }
@@ -334,8 +362,99 @@ const updateBookingStatus = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: `Booking updated to ${status}`,
+      message: `Booking updated to ${finalStatus}`,
       booking,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Cancel booking due to 15-minute No-Show rule with 15% reduction fee & bay re-allotment
+// @route   PUT /api/bookings/:id/no-show
+// @access  Private (Admins)
+const handleNoShowCancellation = async (req, res, next) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (
+      req.user.role === 'station_admin' &&
+      booking.station.toString() !== req.user.assignedStation?.toString()
+    ) {
+      return res.status(403).json({ success: false, message: 'Unauthorized for this station booking' });
+    }
+
+    const cost = booking.estimatedCost || 180.0;
+    const cancellationFee = parseFloat((cost * 0.15).toFixed(2));
+    const refundAmount = parseFloat((cost * 0.85).toFixed(2));
+
+    const oldStatus = booking.bookingStatus;
+    booking.bookingStatus = 'Cancelled';
+    booking.paymentStatus = 'Partially Refunded (85%)';
+    booking.cancellationReason = '15-Minute No-Show: User failed to arrive within 15 minutes of slot time. 15% reduction penalty applied.';
+    booking.cancellationFee = cancellationFee;
+    booking.refundAmount = refundAmount;
+    await booking.save();
+
+    // Check if there is another user waiting in queue for this station on this slotDate and slotTime (FCFS)
+    const nextWaitingBooking = await Booking.findOne({
+      station: booking.station,
+      slotDate: booking.slotDate,
+      slotTime: booking.slotTime,
+      bookingStatus: 'Pending',
+      _id: { $ne: booking._id },
+    }).sort({ createdAt: 1 });
+
+    let reallotted = false;
+    let nextBookingId = null;
+
+    if (nextWaitingBooking) {
+      // Re-allot bay to next user
+      nextWaitingBooking.bookingStatus = 'Confirmed';
+      await nextWaitingBooking.save();
+      reallotted = true;
+      nextBookingId = nextWaitingBooking._id;
+
+      if (booking.slot) {
+        await Slot.findByIdAndUpdate(booking.slot, { status: 'Booked' });
+      }
+    } else {
+      // Free slot and bay
+      if (booking.slot) {
+        await Slot.findByIdAndUpdate(booking.slot, { status: 'Available' });
+      } else if (booking.station && booking.slotDate && booking.slotTime) {
+        await Slot.findOneAndUpdate(
+          { station: booking.station, slotDate: booking.slotDate, slotTime: booking.slotTime },
+          { status: 'Available' }
+        );
+      }
+
+      const station = await Station.findById(booking.station);
+      if (station) {
+        if (station.bays && station.bays.length > 0) {
+          const occBay = station.bays.find((b) => b.status !== 'Available');
+          if (occBay) {
+            occBay.status = 'Available';
+            occBay.lastUpdated = new Date();
+          }
+        }
+        station.availableSlots = Math.min(station.totalSlots || 4, (station.availableSlots || 0) + 1);
+        station.occupiedSlots = Math.max(0, (station.occupiedSlots || 1) - 1);
+        await station.save();
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `15-Minute No-Show Rule Applied: Cancelled with 15% reduction fee (₹${cancellationFee}) and 85% refund (₹${refundAmount}). ${reallotted ? 'Bay re-allotted to next waiting user.' : 'Bay marked Available.'}`,
+      booking,
+      cancellationFee,
+      refundAmount,
+      reallotted,
+      nextBookingId,
     });
   } catch (error) {
     next(error);
@@ -373,4 +492,5 @@ module.exports = {
   getAllBookings,
   getBookingById,
   updateBookingStatus,
+  handleNoShowCancellation,
 };

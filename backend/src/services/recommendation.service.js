@@ -7,20 +7,70 @@
 
 const https = require('https');
 
-const BANGALORE_LANDMARKS = {
-  koramangala: { lat: 12.9352, lng: 77.6245 },
-  whitefield: { lat: 12.9698, lng: 77.75 },
+const KARNATAKA_LANDMARKS = {
+  // Karnataka Districts & Key Cities
+  'dakshina kannada': { lat: 12.8703, lng: 75.1400 },
+  'mangaluru': { lat: 12.9141, lng: 74.8560 },
+  'mangalore': { lat: 12.9141, lng: 74.8560 },
+  'udupi': { lat: 13.3409, lng: 74.7421 },
+  'mysuru': { lat: 12.2958, lng: 76.6394 },
+  'mysore': { lat: 12.2958, lng: 76.6394 },
+  'hubballi': { lat: 15.3647, lng: 75.1240 },
+  'hubli': { lat: 15.3647, lng: 75.1240 },
+  'belagavi': { lat: 15.8497, lng: 74.4977 },
+  'belgaum': { lat: 15.8497, lng: 74.4977 },
+  'hassan': { lat: 13.0033, lng: 76.1004 },
+  'shivamogga': { lat: 13.9299, lng: 75.5681 },
+  'shimoga': { lat: 13.9299, lng: 75.5681 },
+  'davanagere': { lat: 14.4644, lng: 75.9218 },
+  'davangere': { lat: 14.4644, lng: 75.9218 },
+  'tumakuru': { lat: 13.3379, lng: 77.1010 },
+  'tumkur': { lat: 13.3379, lng: 77.1010 },
+  'ballari': { lat: 15.1394, lng: 76.9214 },
+  'bellary': { lat: 15.1394, lng: 76.9214 },
+  'kalaburagi': { lat: 17.3297, lng: 76.8343 },
+  'gulbarga': { lat: 17.3297, lng: 76.8343 },
+  'bidar': { lat: 17.9104, lng: 77.5199 },
+  'raichur': { lat: 16.2076, lng: 77.3463 },
+  'mandya': { lat: 12.5218, lng: 76.8951 },
+  'kolar': { lat: 13.1367, lng: 78.1291 },
+  'chikkamagaluru': { lat: 13.3161, lng: 75.7720 },
+  'chikmagalur': { lat: 13.3161, lng: 75.7720 },
+  'kodagu': { lat: 12.4244, lng: 75.7382 },
+  'coorg': { lat: 12.4244, lng: 75.7382 },
+  'madikeri': { lat: 12.4244, lng: 75.7382 },
+  'uttara kannada': { lat: 14.8185, lng: 74.1300 },
+  'karwar': { lat: 14.8185, lng: 74.1300 },
+  'chitradurga': { lat: 14.2251, lng: 76.3980 },
+  'vijayapura': { lat: 16.8302, lng: 75.7100 },
+  'bijapur': { lat: 16.8302, lng: 75.7100 },
+  'bagalkote': { lat: 16.1691, lng: 75.6615 },
+  'bagalkot': { lat: 16.1691, lng: 75.6615 },
+  'haveri': { lat: 14.7970, lng: 75.4022 },
+  'gadag': { lat: 15.4298, lng: 75.6268 },
+  'koppal': { lat: 15.3524, lng: 76.1557 },
+  'yadgir': { lat: 16.7645, lng: 77.1378 },
+  'chamarajanagar': { lat: 11.9261, lng: 76.9437 },
+  'ramanagara': { lat: 12.7209, lng: 77.2799 },
+  'chikkaballapur': { lat: 13.4355, lng: 77.7275 },
+  'sakleshpur': { lat: 12.9436, lng: 75.7865 },
+  'bantwal': { lat: 12.8931, lng: 75.0353 },
+  'puttur': { lat: 12.7667, lng: 75.2000 },
+
+  // Bengaluru Major Localities
+  'koramangala': { lat: 12.9352, lng: 77.6245 },
+  'whitefield': { lat: 12.9698, lng: 77.75 },
   'mg road': { lat: 12.975, lng: 77.6063 },
-  indiranagar: { lat: 12.9784, lng: 77.6408 },
-  hsr: { lat: 12.9116, lng: 77.6473 },
+  'indiranagar': { lat: 12.9784, lng: 77.6408 },
+  'hsr': { lat: 12.9116, lng: 77.6473 },
   'hsr layout': { lat: 12.9116, lng: 77.6473 },
-  jayanagar: { lat: 12.9308, lng: 77.5838 },
+  'jayanagar': { lat: 12.9308, lng: 77.5838 },
   'electronic city': { lat: 12.8456, lng: 77.6603 },
-  marathahalli: { lat: 12.9591, lng: 77.6974 },
-  bangalore: { lat: 12.9716, lng: 77.5946 },
-  bengaluru: { lat: 12.9716, lng: 77.5946 },
-  itpl: { lat: 12.9698, lng: 77.75 },
-  airport: { lat: 13.1986, lng: 77.7066 },
+  'marathahalli': { lat: 12.9591, lng: 77.6974 },
+  'bangalore': { lat: 12.9716, lng: 77.5946 },
+  'bengaluru': { lat: 12.9716, lng: 77.5946 },
+  'itpl': { lat: 12.9698, lng: 77.75 },
+  'airport': { lat: 13.1986, lng: 77.7066 },
 };
 
 /**
@@ -94,8 +144,8 @@ const resolveCoordinates = async (text) => {
     };
   } catch (err) {
     const clean = text.trim().toLowerCase();
-    if (BANGALORE_LANDMARKS[clean]) {
-      return { ...BANGALORE_LANDMARKS[clean], formattedAddress: clean };
+    if (KARNATAKA_LANDMARKS[clean]) {
+      return { ...KARNATAKA_LANDMARKS[clean], formattedAddress: clean };
     }
     return { lat: 12.9716, lng: 77.5946, formattedAddress: 'Bengaluru, Karnataka, India' };
   }
@@ -233,7 +283,7 @@ const getHybridDrivingRoute = async (originStr, destStr) => {
 };
 
 /**
- * Rank stations for a route
+ * Rank stations for a route based on corridor proximity, charger power, and slot availability
  */
 const rankStationsForRoute = (stations, originCoords, destCoords) => {
   const origin = (originCoords && typeof originCoords === 'object' && originCoords.lat)
@@ -243,6 +293,8 @@ const rankStationsForRoute = (stations, originCoords, destCoords) => {
     ? destCoords
     : { lat: 12.9716, lng: 77.5946 };
 
+  const directDist = haversineKm(origin.lat, origin.lng, dest.lat, dest.lng);
+
   return stations
     .map((station) => {
       const lat = station.latitude || (station.location?.coordinates ? station.location.coordinates[1] : 0);
@@ -250,19 +302,22 @@ const rankStationsForRoute = (stations, originCoords, destCoords) => {
 
       const distOrigin = haversineKm(origin.lat, origin.lng, lat, lng);
       const distDest = haversineKm(dest.lat, dest.lng, lat, lng);
-      const detourKm = parseFloat((distOrigin + distDest).toFixed(2));
+      const totalDetour = parseFloat((distOrigin + distDest).toFixed(2));
+      // True extra detour beyond direct straight line
+      const extraDetourKm = Math.max(0, parseFloat((totalDetour - directDist).toFixed(2)));
 
       const slotScore = Math.min(10, (station.availableSlots / Math.max(1, station.totalSlots)) * 10);
       const powerScore = Math.min(10, (station.chargerPower / 120.0) * 10);
-      const detourPenalty = Math.min(10, detourKm / 5.0);
+      // Detour penalty: within 10 km extra detour is barely penalized; >30 km heavily penalized
+      const detourPenalty = Math.min(10, extraDetourKm / 4.0);
 
-      const totalScore = parseFloat((slotScore * 0.4 + powerScore * 0.4 - detourPenalty * 0.2 + 5.0).toFixed(1));
+      const totalScore = parseFloat((slotScore * 0.35 + powerScore * 0.35 - detourPenalty * 0.3 + 5.0).toFixed(1));
 
       return {
         ...(station.toObject ? station.toObject() : station),
         distFromOriginKm: distOrigin,
         distFromDestKm: distDest,
-        totalDetourKm: detourKm,
+        totalDetourKm: extraDetourKm,
         recommendationScore: Math.max(1.0, Math.min(10.0, totalScore)),
       };
     })
