@@ -268,7 +268,10 @@ async function searchLocations(query) {
 
   if (apiKey) {
     try {
-      const q = clean.toLowerCase().includes('india') ? clean : `${clean}, Bengaluru, Karnataka, India`;
+      const lower = clean.toLowerCase();
+      const q = (lower.includes('karnataka') || lower.includes('india'))
+        ? clean
+        : `${clean}, Karnataka, India`;
       const url = `${GOOGLE_GEOCODE_URL}?address=${encodeURIComponent(q)}&key=${apiKey}`;
       const data = await httpsGetJson(url);
 
