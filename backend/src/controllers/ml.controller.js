@@ -1,5 +1,5 @@
 const Station = require('../models/Station');
-const { predictDemand, forecastLoad, predictBestSlotAndBay } = require('../services/mlClient.service');
+const { predictDemand, forecastLoad, getDemandCurve } = require('../services/mlClient.service');
 
 // @desc    Get ML service status
 // @route   GET /api/ml/status
@@ -72,39 +72,14 @@ const getLoadForecasts = async (req, res, next) => {
   }
 };
 
-// @desc    Predict Best Slot & Best Bay (Fast Time & Low Traffic Optimization)
-// @route   GET /api/ml/predict/best-slot-bay
+// @desc    Get 24-hour demand prediction curve (hours 0 to 23)
+// @route   GET /api/ml/demand/curve
 // @access  Public
-const getBestSlotBayPrediction = async (req, res, next) => {
+const getStationDemandCurve = async (req, res, next) => {
   try {
-    const { stationId, date, hour } = req.query;
-
-    let station = null;
-    if (stationId) {
-      station = await Station.findById(stationId);
-    } else {
-      station = await Station.findOne({ status: 'Active' });
-    }
-
-    const prediction = await predictBestSlotAndBay({
-      station,
-      date,
-      hour: hour !== undefined ? parseInt(hour) : new Date().getHours(),
-    });
-
-    res.json({
-      success: true,
-      station: station
-        ? {
-            id: station._id,
-            stationName: station.stationName,
-            chargerPower: station.chargerPower,
-            chargerType: station.chargerType,
-            totalSlots: station.totalSlots,
-          }
-        : null,
-      ...prediction,
-    });
+    const { stationId, date } = req.query;
+    const curveData = await getDemandCurve({ stationId, date });
+    res.json(curveData);
   } catch (error) {
     next(error);
   }
@@ -113,6 +88,6 @@ const getBestSlotBayPrediction = async (req, res, next) => {
 module.exports = {
   getMlStatus,
   getStationDemand,
+  getStationDemandCurve,
   getLoadForecasts,
-  getBestSlotBayPrediction,
 };

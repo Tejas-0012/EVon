@@ -2,7 +2,6 @@ const Station = require('../models/Station');
 const Booking = require('../models/Booking');
 const User = require('../models/User');
 const Payment = require('../models/Payment');
-const { predictBestSlotAndBay } = require('../services/mlClient.service');
 
 // @desc    Get system-wide analytics overview with full charts, distributions, and AI insights
 // @route   GET /api/analytics/overview
@@ -233,11 +232,6 @@ const getSuperAdminOverview = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .limit(10);
 
-    // ML Prediction: Best Slot and Best Bay based on low traffic and fast turnaround time
-    const slotBayPrediction = await predictBestSlotAndBay({
-      station: stations.length > 0 ? stations[0] : null,
-    });
-
     res.json({
       success: true,
       metrics: {
@@ -252,7 +246,6 @@ const getSuperAdminOverview = async (req, res, next) => {
       },
       aiInsights,
       slotAnalytics,
-      slotBayPrediction,
       bookingStatusDistribution,
       chargerTypeDistribution,
       monthlyBookings,

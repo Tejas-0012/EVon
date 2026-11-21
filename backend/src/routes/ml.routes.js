@@ -3,13 +3,13 @@ const router = express.Router();
 const {
   getMlStatus,
   getStationDemand,
+  getStationDemandCurve,
   getLoadForecasts,
-  getBestSlotBayPrediction,
 } = require('../controllers/ml.controller');
 
 router.get('/status', getMlStatus);
+router.get('/demand/curve', getStationDemandCurve);
 router.get('/demand/station/:stationId', getStationDemand);
 router.get('/load/forecast', getLoadForecasts);
-router.get('/predict/best-slot-bay', getBestSlotBayPrediction);
 
 module.exports = router;
